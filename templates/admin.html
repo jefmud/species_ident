@@ -1,0 +1,25 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages %}
+{% block title %}Admin Index{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user, 'admin') }}
+{% endblock %}
+
+{% block content %}
+<div class="container theme-showcase" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <h1>Administration</h1>
+  <p>
+    <ul>
+      <li><a href="{{ url_for('admin.index') }}user">User</a></li>
+      <li><a href="{{ url_for('_user_audit') }}">Audit Users</a></li>
+    </ul>
+  </p>
+  <p>
+  <b>Notes:</b>
+  <li>You will have to modify admin.html to add more administrative view links.</li>
+  <li>If you directly modify a user's password, you will have to run "Audit Users" to ensure user can login</li>
+  </p>
+</div>
+{% endblock %}

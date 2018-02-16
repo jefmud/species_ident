@@ -1,0 +1,17 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user, 'about') }}
+{% endblock %}
+
+{% block content %}
+<div class="container theme-showcase" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <h1>About this project</h1>
+  <p>Everyday carry listicle hell of sriracha chillwave plaid stumptown distillery tacos coloring book copper mug knausgaard fashion axe. Seitan four loko keffiyeh cloud bread XOXO four dollar toast. Unicorn roof party tbh aesthetic 90's poke. Vegan trust fund cardigan jean shorts, fashion axe aesthetic migas deep v vice truffaut tacos poutine kogi. Poutine readymade selfies seitan tumblr, cardigan glossier semiotics meh venmo whatever. Humblebrag hell of pitchfork fam man bun celiac.</p>
+  <p>Gentrify chartreuse yuccie, intelligentsia brooklyn 3 wolf moon heirloom letterpress pour-over pitchfork stumptown. Man braid selfies kitsch kickstarter. IPhone banjo tousled try-hard meggings. Church-key brunch iceland williamsburg freegan, sustainable etsy lumbersexual chillwave food truck chartreuse hella waistcoat fingerstache cred. Shaman hella meggings tousled, helvetica tote bag man bun.</p>
+  </p>
+</div>
+{% endblock %}

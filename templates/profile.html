@@ -1,0 +1,42 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages %}
+{% block title %}Profile{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user) }}
+{% endblock %}
+
+{% block content %}
+<div class="container theme-showcase" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <h1>Hello, {{ g.user }}</h1>
+  <div class="row">
+  <a class="btn btn-primary" role="button" href="{{ url_for('observe', image_id=0 )}}">Make a new observation</a>
+  </div>
+  <p></p>
+  <div class="row">
+    {% for item in talk %}
+      <div class="alert alert-warning" role="alert">
+      {{ item.notes }}
+      <a href="{{ url_for('observe', image_id=item.image.id) }}">Click here for more details</a>
+      </div>
+      {% endfor %}
+  </div>
+  <div class="row">
+  {% for species_name, species_data in species_master.items() %}
+    {% if species_data['count'] > 0 %}
+      {% if species_name == 'NOTHING' %}
+        <div class="alert alert-info" role="alert">
+          Snapshots with no animals observed observed {{ species_data['count'] }} times.
+        </div>
+      {% else %}
+        <div class="alert alert-success" role="alert">
+          <strong>{{species_name}}</strong> observed {{ species_data['count'] }} times.
+          <a href="{{ url_for('profile_species', species_id=species_data['id']) }}">Click here for more details</a>
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

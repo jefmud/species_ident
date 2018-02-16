@@ -1,0 +1,46 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages %}
+{% block title %}SnapIdent{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user) }}
+{% endblock %}
+
+{% block content %}
+<div class="container theme-showcase" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <h1>Hello, Camera Trapper</h1>
+  <img align="right" src="{{ url_for('static', filename='img/animals.png')}}" />
+  <h3>Fast Facts</h3>
+  <ul>
+  
+    <li>We currently have {{ data.snapshots }} snaphots in the database.</li>
+    <li>So far, we have made {{ data.observations }} observations.</li>
+    <li>This is {{ data.percent }}% of all the current snapshots!</li>
+  </ul>
+  
+  {% if users %}
+  <h3>Leaderboard</h3>
+  <ol>
+    {% for u in users %}
+      <li>{{ u.username }}: {{ u.observations() }}</li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  {% if g.user.is_authenticated %}
+  <h3>Things to do</h3>
+  <ul>
+    <li><a href="{{ url_for('profile') }}">Go to your profile page.  This is where you can see your personal stats.</a></li>
+    <li><a href="{{ url_for('observe') }}">Jump straight into observations!</a></li>
+  </ul>
+  {% endif %}
+  <p>
+  If you don't have an account, but would like to participate, please select the registration link above or click here:
+  <a href="{{ url_for('register') }}">Register</a>.
+  </p>
+  <p>
+  If you already have an account, click the LOGIN link above or click here:
+  <a href="{{ url_for('login') }}">Login</a>.
+  </p>
+</div>
+{% endblock %}

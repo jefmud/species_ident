@@ -1,0 +1,26 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages, render_observation_alerts, render_observation_form %}
+{% block title %}Observation {{ image.id }}{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user) }}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <div class="row">
+    <div class="col-md-9">
+      <a href="{{ image.url() }}" target="_blank"><image class="img-responsive" src="{{ image.url() }}" /></a>
+    </div>
+    <div class="col-md-3">
+      <!-- show observations -->
+      {{ render_observation_alerts(obs, talk) }}
+      {{ render_observation_form(species, talkform) }}
+      
+      <a type="button" class="btn btn-info btn-lg" href="{{url_for('observe')}}">Next</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

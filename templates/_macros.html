@@ -1,0 +1,167 @@
+{% macro render_field(field) %}
+<div class="form-group">
+    {% if field.errors %}
+        {% for error in field.errors %}
+            <div class="notification error">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+    <label class="control-label" for="{{ field.name.text }}">{{ field.label.text }}</label>
+    <input class="form-control" id="{{ field.name.text }}" name="{{ field.name.text }}" {{ field.required }}>
+</div>
+{% endmacro %}
+
+{% macro render_messages(messages) %}
+  <!-- bootstrap style messages sent from Flask app -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <!-- <strong>Title</strong> --> {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+{% endmacro %}
+
+{% macro render_navigation(current_user, active_page='home') %}
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="{{ url_for('index') }}">SnapIdent</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li {% if active_page == 'home' %}class="active"{% endif %}><a href="{{ url_for('index') }}">Home</a></li>
+          {% if current_user.is_authenticated %}
+            <li {% if active_page == 'profile' %}class="active"{% endif %}><a href="{{ url_for('profile') }}">Profile</a></li>
+            {% if current_user.is_admin %}
+              <li {% if active_page == 'admin' %}class="active"{% endif %}><a href="{{ url_for('admin.index') }}">Admin</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+          {% else %}
+            <li {% if active_page == 'login' %}class="active"{% endif %}><a href="{{ url_for('login') }}">Login</a></li>
+            <li {% if active_page == 'register' %}class="active"{% endif %}><a href="{{ url_for('register') }}">Register</a></li>
+          {% endif %}
+          <li {% if active_page == 'about' %}class="active"{% endif %}><a href="{{ url_for('about') }}">About</a></li>
+
+        </ul>
+        <form class="navbar-form navbar-right">
+          <div class="form-group">
+            <input type="text" placeholder="Search" class="form-control" name="search">
+          </div>
+          <button type="submit" class="btn btn-success" name="submit">Search</button>
+        </form>
+      </div><!--/.navbar-collapse -->
+    </div>
+  </nav>
+{% endmacro %}
+
+{% macro render_observation_alerts(obs, talk=[]) %}
+{% for item in talk %}
+  <div class="alert alert-warning" role="alert">
+    {{ item.notes }}
+    &nbsp;&nbsp;&nbsp;<a class="btn btn-default btn-sm" role="button" href="{{ url_for('talk_delete', item_id=item.id) }}"><span class="glyphicon glyphicon-remove"></span>Remove</a>
+  </div>
+{% endfor %}
+{% if obs|length > 0 %}
+  {% for ob in obs %}
+    <div class="alert alert-info" role="alert">
+      <strong>{{ ob.species }}</strong>
+      {% if ob.count < 11 %}
+      count = {{ ob.count }}
+      {% elif ob.count < 12 %}
+      11-51
+      {% else %}
+      51+
+      {% endif %}
+      &nbsp;&nbsp;&nbsp;<a class="btn btn-default btn-sm" role="button" href="{{ url_for('observe_delete', item_id=ob.id) }}"><span class="glyphicon glyphicon-remove"></span>Remove</a>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-warning" role="alert">
+    <strong>alert:</strong> no observations on this snapshot
+  </div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_observation_form(species, talkform) %}
+  {% import 'bootstrap/wtf.html' as wtf %}
+      <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#observeModal">Make Observation</button>
+      <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#talkModal">Talk</button>
+<!-- Observation Modal -->
+<div class="modal fade" id="observeModal" tabindex="-1" role="dialog" aria-labelledby="observeModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-body">
+        <form method="POST">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Observation</h3>
+            </div>
+            <div class="panel-body">
+              <table class="table table-bordered"><tr>
+              {% for s in species %}
+              {% if loop.index % 4 == 1 %}
+              </tr><tr>
+              {% endif %}
+              <td>
+              <label class="radio-inline"><input type="radio" name="species" value="{{s.name}}">{{s.name}}</label>
+              </td>
+              {% endfor %}
+              </tr>
+              </table>
+              <h4>Count</h4>
+              <label class="radio-inline"><input type="radio" name="count" value="1">1</label>
+              <label class="radio-inline"><input type="radio" name="count" value="2">2</label>
+              <label class="radio-inline"><input type="radio" name="count" value="3">3</label>
+              <label class="radio-inline"><input type="radio" name="count" value="4">4</label>
+              <label class="radio-inline"><input type="radio" name="count" value="5">5</label>
+              <label class="radio-inline"><input type="radio" name="count" value="6">6</label>
+              <label class="radio-inline"><input type="radio" name="count" value="7">7</label>
+              <label class="radio-inline"><input type="radio" name="count" value="8">8</label>
+              <label class="radio-inline"><input type="radio" name="count" value="9">9</label>
+              <label class="radio-inline"><input type="radio" name="count" value="10">10</label>
+              <label class="radio-inline"><input type="radio" name="count" value="11">11-51</label>
+              <label class="radio-inline"><input type="radio" name="count" value="12">51+</label>
+            </div>
+          </div>
+        <input type="submit" class="btn btn-primary"name="Submit" value="Save Changes" />
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Talk Modal -->
+<div id="talkModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Talk Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Notes about Snapshot</h4>
+      </div>
+      <div class="modal-body">
+        {{ wtf.quick_form(talkform) }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endmacro %}
