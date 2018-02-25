@@ -1,6 +1,7 @@
 # python imports
 import datetime
 import json
+from operator import itemgetter
 import os
 from random import randint
 import sys
@@ -259,3 +260,17 @@ def species_dict(species=None):
         item.update({'id':s.id})
         master.update({s.name: item})
     return master
+
+def get_user_stats():
+    """returns a list with simplified username and counts"""
+    users = User.select()
+    ustats = []
+    for user in users:
+        uobs = Observation.select().where(
+            Observation.user==user.id
+        )
+        ustats.append((user.username,len(uobs)))
+    
+    # sort by observation count and return
+    ustats.sort(key=itemgetter(1), reverse=True)
+    return ustats

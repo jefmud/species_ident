@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" role="main" style="margin-top:60px;">
+<div class="container" role="main" style="margin-top:60px;">
   {{ render_messages(messages) }}
   <div class="row">
     <div class="col-md-9">
@@ -17,8 +17,13 @@
       <!-- show observations -->
       {{ render_observation_alerts(obs, talk) }}
       {{ render_observation_form(species, talkform) }}
-      
-      <a type="button" class="btn btn-info btn-lg" href="{{url_for('observe')}}">Next</a>
+      <div style="margin-top:30px; text-align:center;">
+      <a type="button" class="btn btn-info" style='width:15em;' href="{{url_for('_observe_save', image_id=image.id, count=0, species='NOTHING', next_id=0)}}">
+      No Species Present</a>
+      </div>
+      <div style="margin-top:20px; text-align:center;">
+      <a type="button" class="btn btn-success" style='width:15em;' href="{{url_for('observe')}}">Next</a>
+      </div>
     </div>
   </div>
 </div>

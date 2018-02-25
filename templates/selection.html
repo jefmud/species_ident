@@ -1,0 +1,56 @@
+{% extends "bootstrap/base.html" %}
+{% from "_macros.html" import render_navigation, render_messages %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+{{ render_navigation(current_user) }}
+{% endblock %}
+
+{% block content %}
+<div class="container theme-showcase" role="main" style="margin-top:60px;">
+  {{ render_messages(messages) }}
+  <div class="col-md-6">
+  <form method="POST">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Species</h3>
+      </div>
+      <div class="panel-body">
+        <table class="table table-bordered"><tr>
+        {% for s in species %}
+        {% if loop.index % 4 == 1 %}
+        </tr><tr>
+        {% endif %}
+        <td>
+        <label class="radio-inline"><input type="radio" name="species" value="{{s.name}}">{{s.name}}</label>
+        </td>
+        {% endfor %}
+        </tr>
+        </table>
+      </div>
+    </div>
+  
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Count</h3>
+      </div>
+      <div class="panel-body">
+        <label class="radio-inline"><input type="radio" name="count" value="1">1</label>
+        <label class="radio-inline"><input type="radio" name="count" value="2">2</label>
+        <label class="radio-inline"><input type="radio" name="count" value="3">3</label>
+        <label class="radio-inline"><input type="radio" name="count" value="4">4</label>
+        <label class="radio-inline"><input type="radio" name="count" value="5">5</label>
+        <label class="radio-inline"><input type="radio" name="count" value="6">6</label>
+        <label class="radio-inline"><input type="radio" name="count" value="7">7</label>
+        <label class="radio-inline"><input type="radio" name="count" value="8">8</label>
+        <label class="radio-inline"><input type="radio" name="count" value="9">9</label>
+        <label class="radio-inline"><input type="radio" name="count" value="10">10</label>
+        <label class="radio-inline"><input type="radio" name="count" value="11">11-51</label>
+        <label class="radio-inline"><input type="radio" name="count" value="12">51+</label>
+      </div>
+    </div>
+    <input type="submit" name="Submit">
+    </form>
+  </div>
+</div>
+{% endblock %}

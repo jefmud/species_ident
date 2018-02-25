@@ -15,6 +15,12 @@
   </div>
   <p></p>
   <div class="row">
+  Recent observations: |
+    {% for item in obs %}
+      <a href="{{ url_for('observe',image_id=item.image.id) }}" >{{item.image.id}}</a> |
+    {% endfor %}
+  </div>
+  <div class="row">
     {% for item in talk %}
       <div class="alert alert-warning" role="alert">
       {{ item.notes }}

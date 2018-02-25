@@ -19,11 +19,11 @@
     <li>This is {{ data.percent }}% of all the current snapshots!</li>
   </ul>
   
-  {% if users %}
+  {% if user_stats %}
   <h3>Leaderboard</h3>
   <ol>
-    {% for u in users %}
-      <li>{{ u.username }}: {{ u.observations() }}</li>
+    {% for u in user_stats %}
+      <li>{{ u[0] }}: {{ u[1] }}</li>
     {% endfor %}
   </ol>
   {% endif %}

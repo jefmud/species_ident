@@ -87,15 +87,19 @@
   {% endfor %}
 {% else %}
   <div class="alert alert-warning" role="alert">
-    <strong>alert:</strong> no observations on this snapshot
+    <strong>alert:</strong> make an observation!
   </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_observation_form(species, talkform) %}
   {% import 'bootstrap/wtf.html' as wtf %}
-      <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#observeModal">Make Observation</button>
-      <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#talkModal">Talk</button>
+    <div style="margin-top:5px; text-align:center;">
+      <button type="button" class="btn btn-primary" style='width:15em;' data-toggle="modal" data-target="#observeModal">Make Observation</button>
+    </div>
+    <div style="margin-top:5px; text-align:center;">
+      <button type="button" class="btn btn-warning" style='width:15em;' data-toggle="modal" data-target="#talkModal">Talk</button>
+    </div>
 <!-- Observation Modal -->
 <div class="modal fade" id="observeModal" tabindex="-1" role="dialog" aria-labelledby="observeModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">

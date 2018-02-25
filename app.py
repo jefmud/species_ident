@@ -1,6 +1,8 @@
 # app.py
 # the main server app
 import sys
+import logging
+from datetime import datetime  as dt
 
 # server parameters
 HOST = '0.0.0.0'
@@ -27,7 +29,13 @@ from utils import get_object_or_404
 
 app = Flask(__name__)
 app.secret_key = 'PutYourSecretInHere'
+# set up logging
+file_handler = logging.FileHandler('app.log')
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+# set up admin
 admin = admin.initialize(app)
+# include bootstrap
 Bootstrap(app)
 
 # flask-login setup
@@ -47,12 +55,20 @@ def load_user(user_id):
 @app.before_request
 def before_request():
     g.db = models.DATABASE
-    g.db.connect()
+    try:
+        g.db.connect()
+    except Exception as e:
+        app.log('ERROR: DB connect @ {}'.format(dt.now()))
+        app.log('ERROR = {}'.format(e))
     g.user = current_user
 
 @app.after_request
 def after_request(response):
-    g.db.close()
+    try:
+        g.db.close()
+    except Exception as e:
+        app.log('ERROR: attempt to close DB @'.format(dt.now()))
+        app.log('ERROR = {}'.format(e))
     return response
 
 # Regular routes
@@ -61,11 +77,15 @@ def after_request(response):
 def index():
     """main landing page"""
     # todo, at some point, needs to become multi-project friendly
-    users = None
-    data = {'observations':0, 'snapshots':models.IMAGE_COUNT, 'percent':0, 'leader':""}
-    images = models.Image.select()
-    observations = models.Observation.select()
-    data['observations'] = len(observations)
+    user_stats = models.get_user_stats()
+    data = {'observations': 0, 'snapshots': models.IMAGE_COUNT, 'percent': 0, 'leader':"", 'leader_count': 0}
+    for user in user_stats:
+        if user_stats[1] > data['leader_count']:
+            data['leader_count'] = user[1]
+            data['leader'] = user[0]
+            
+        data['observations'] += user[1]
+        
     # I removed the snapshot query to save time, administrator needs to update when more images
     # are added to the database (celery task?)
     # data['snapshots'] = len(images)
@@ -74,8 +94,11 @@ def index():
         data['percent'] = data['observations']/float(data['snapshots']) * 100
     except:
         data['percent'] = 0.0
-    users = models.User.select()
-    return render_template('index.html', data=data, users=users)
+    
+    top_limit = len(user_stats)
+    if top_limit > 10:
+        top_limit = 10
+    return render_template('index.html', data=data, user_stats=user_stats[:top_limit])
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -93,11 +116,13 @@ def login():
             if user.authenticate(password):
                 login_user(user)
                 flash('Welcome {}!'.format(user), category='success')
+                app.logger.info('user login by {} @ {}'.format(user, dt.now()))
                 return redirect(url_for('profile'))
         except Exception as e:
             print(e)
 
         flash('Incorrect login information', category='danger')
+        app.logger.warning('login failed for {} @ {}'.format(username, dt.now()))
 
     return render_template('login/login.html', form=form)
 
@@ -105,8 +130,10 @@ def login():
 @login_required
 def logout():
     """logout the user"""
+    app.logger.info('username {} logout @ {}'.format(g.user, dt.now()))
     logout_user()
     flash("You have been logged out.", category="warning")
+    
     return redirect(url_for('index'))
 
 @app.route('/register', methods=['GET','POST'])
@@ -132,8 +159,10 @@ def register():
         except:
             flash("Problems registering this user = {}".format(form.email.data),
                   category='danger')
+            app.logger.error('problems registering user {} @ {}'.format(form.email.data, dt.now()))
         else:
             flash("Thanks for registering as {}".format(form.email.data), category="info")
+            app.logger.info('registered new user = {} @ {}'.format(form.email.data, dt.now()))
             return redirect(url_for('index'))
 
     return render_template('login/register.html', form=form)
@@ -159,9 +188,16 @@ def profile():
         species_data.update({'count':len(obs)})
         species_master.update({species_name:species_data})
         
-    return render_template('profile.html', species_master=species_master, talk=talk)
+        # get last 5 observations
+        all_obs = models.Observation.select().where(models.Observation.user == g.user._get_current_object())
+        obs_limit = 10
+        if len(all_obs) < obs_limit:
+            obs_limit = len(obs)
+            
+    return render_template('profile.html', species_master=species_master, obs=all_obs[:obs_limit], talk=talk)
 
 @app.route('/profile/<int:species_id>')
+@login_required
 def profile_species(species_id):
     """Show a listing of observations of a particular species by the user"""
     species = get_object_or_404(models.Species, species_id)
@@ -186,6 +222,7 @@ def _user_audit():
         models.audit_users()
         flash("User audit completed",category="success")
         return redirect(url_for('admin.index'))
+    app.logger.error('unauthorized attempt at user_audit by {} @ {}'.format(g.user,dt.now()))
     abort(403) # they should not have run this give 'em the 403
     
 @app.route('/about')
@@ -216,8 +253,6 @@ def species(name):
     return msg
     
 
-
-        
 @app.route('/selection', methods=('GET', 'POST'))
 def selection():
     """test of rendering a selection matrix"""
@@ -226,9 +261,43 @@ def selection():
         s = request.form['species']
         count = request.form['count']
         print s,count
-    return render_template('selection.html', species=species)
-
-
+    return render_template('selection.html', species=species) 
+    
+@app.route('/_observe/save/<int:image_id>/<int:count>/<species>/<int:next_id>')
+@login_required
+def _observe_save(image_id, count, species, next_id=0):
+    """saves an observation and moves to next_id"""
+    try:
+        # if species id is numeric, use it
+        species_id = int(species)
+    except:
+        try:
+            # lookup the species id
+            species = models.Species.get(models.Species.name == species)
+            species_id = species.id
+        except:
+            flash("No species with that name or id", category="danger")
+            app.logger.warning('failed looking up species "{}"'.format(species))
+            return redirect(url_for('observe',image_id=image_id))
+    
+    try:
+        # save the observation
+        models.Observation.create(
+            user=g.user._get_current_object(),
+            image=image_id,
+            count=count,
+            species=species_id
+        )
+        # move on to next_id (if zero, it is a random image)
+        return redirect(url_for('observe', image_id=next_id))
+    except Exception as e:
+        flash("Problems saving observation", category="danger")
+        app.logger.error('problems saving observation for user={} image_id={}, count={}, species_id={}'.format(g.user,image_id,count,species_id))
+        app.logger.error(e)
+        return redirect(url_for('observe',image_id=image_id))
+        
+        
+        
 @app.route('/observe')
 @app.route('/observe/<int:image_id>', methods=('GET','POST'))
 @login_required
@@ -256,6 +325,7 @@ def observe(image_id=0):
                 return redirect(url_for('observe', image_id=image.id))
             except:
                 flash("Problems creating snapshot notes", category="danger")
+                app.logger.error('problems creating note for user={}, image={}'.format(g.user,image_id))
                 
             return redirect(url_for('observe', image_id=image.id))
         
@@ -277,7 +347,6 @@ def observe(image_id=0):
             models.Observation.create(
                 user=g.user._get_current_object(),
                 image=image.id,
-                #species=current_animal.id,
                 species=user_identified_species_id,
                 count=count
             )
@@ -286,6 +355,7 @@ def observe(image_id=0):
         except Exception as e:
             print(e)
             flash('Problems saving observation!', category='danger')
+            app.logger.error('problems saving observation user={}, image={}, count={}, species={}'.format(g.user,image_id,count,user_identified_species_id))
             
     # get any observations made by the user on the current image
     obs = models.Observation.select().where(
@@ -312,6 +382,7 @@ def talk_delete(item_id):
         image_id = talk.image.id
         talk.delete_instance()
         return redirect(url_for('observe', image_id=image_id))
+    app.logger.warning('failed delete of talk item user={} talk={}'.format(g.user,item_id))
     abort(403) # the user is not allowed to delete this talk item
 
 @app.route('/observe/delete/<int:item_id>')
@@ -322,17 +393,22 @@ def observe_delete(item_id):
         image_id = observation.image.id
         observation.delete_instance()
         return redirect(url_for('observe', image_id=image_id))
+    app.logger.warning('failed delete of observation user={}, observation={}'.format(g.user, item_id))
     abort(403) # the user is not allowed to delete this observation
         
 if __name__ == '__main__':
     if '--createsuperuser' in sys.argv:
         models.create_superuser()
+        app.logger.info('creating admin user initiated')
         print("** superuser created **")
     elif '--initdatabase' in sys.argv:
+        app.logger.info('database initialize begin')
         models.initialize_database()
+        app.logger.info('database initialize completed')
         print("** database initialized **")
     elif '--runserver' in sys.argv:
         # see settings at the top of the file
+        app.logger.info('app started host={}, port={}'.format(HOST,PORT))
         app.run(host=HOST, port=PORT, debug=DEBUG)
     else:
         msg = """
