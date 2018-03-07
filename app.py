@@ -58,8 +58,8 @@ def before_request():
     try:
         g.db.connect()
     except Exception as e:
-        app.log('ERROR: DB connect @ {}'.format(dt.now()))
-        app.log('ERROR = {}'.format(e))
+        app.logger.info('ERROR: DB connect @ {}'.format(dt.now()))
+        app.logger.info('ERROR = {}'.format(e))
     g.user = current_user
 
 @app.after_request
@@ -67,8 +67,8 @@ def after_request(response):
     try:
         g.db.close()
     except Exception as e:
-        app.log('ERROR: attempt to close DB @'.format(dt.now()))
-        app.log('ERROR = {}'.format(e))
+        app.logger.info('ERROR: attempt to close DB @'.format(dt.now()))
+        app.logger.info('ERROR = {}'.format(e))
     return response
 
 # Regular routes
