@@ -58,8 +58,8 @@ def before_request():
     try:
         g.db.connect()
     except Exception as e:
-        app.logger.info('ERROR: DB connect @ {}'.format(dt.now()))
-        app.logger.info('ERROR = {}'.format(e))
+        app.log('ERROR: DB connect @ {}'.format(dt.now()))
+        app.log('ERROR = {}'.format(e))
     g.user = current_user
 
 @app.after_request
@@ -67,8 +67,8 @@ def after_request(response):
     try:
         g.db.close()
     except Exception as e:
-        app.logger.info('ERROR: attempt to close DB @'.format(dt.now()))
-        app.logger.info('ERROR = {}'.format(e))
+        app.log('ERROR: attempt to close DB @'.format(dt.now()))
+        app.log('ERROR = {}'.format(e))
     return response
 
 # Regular routes
@@ -401,6 +401,10 @@ if __name__ == '__main__':
         models.create_superuser()
         app.logger.info('creating admin user initiated')
         print("** superuser created **")
+    elif '--updateimages' in sys.argv:
+        models.update_images(sys.argv)
+        print("** image update complete **")
+        sys.exit(0)
     elif '--initdatabase' in sys.argv:
         app.logger.info('database initialize begin')
         models.initialize_database()

@@ -19,7 +19,7 @@ from flask_login import UserMixin
 
 DATABASE = SqliteDatabase('app.db')
 
-IMAGE_COUNT = 30122
+IMAGE_COUNT = 58212
 
 # model definitions
 class BaseModel(Model):
@@ -158,12 +158,31 @@ class Image(BaseModel):
     def __repr__(self):
         return self.filepath
     
+def update_images(args):
+    """update images from a file.
+    --updateimages file=data/images.txt baseurl=http://media.itg.wfu.edu/sites/
+    """
+    fname = None
+    base_url = None
+    for arg in args:
+        if 'file=' in arg:
+            fname = arg.split('=')[1]
+        if 'baseurl=' in arg:
+            base_url = arg.split('=')[1]
+        else:
+            base_url = "http://media.itg.wfu.edu/sites/"
+    if fname is None:
+        print("ERROR: must specify a filename, e.g. file=data/images.txt")
+        return False
+    image_init(fname=fname, base_url=base_url)
     
-def image_init():
+        
+    
+def image_init(fname, base_url="http://media.itg.wfu.edu/sites/"):
     """initialize the image database table from the fixture file"""
     # warning, this is a big file and will take more than an hour!
-    fname = "data/image_files.txt"
-    base_url = "http://media.itg.wfu.edu/sites/"
+    # fname = "data/image_files.txt"
+    # base_url = "http://media.itg.wfu.edu/sites/"
     count = 0
     with open(fname,"r") as fp:
         data = fp.read()
@@ -178,13 +197,14 @@ def image_init():
             # path = os.path.join(base_url,line)
             try:
                 # see if image is already in database
-                image = Image.get(Image.filepath==filepath)
+                image = Image.get(Image.filepath==line)
                 print("{} already in database".format(image))
             except:
                 # instantiate an Image object and save to database
                 image = Image.create(filepath=line, base_url=base_url, site='')
                 try:
                     image.save()
+                    print("created {}".format(image))
                 except Exception as e:
                     # whoops, something is f-ed up, maybe will recover?
                     print(e)
@@ -229,25 +249,27 @@ class Talk(BaseModel):
     class Meta:
         order_by = ('-timestamp','user')
     
-def get_unclassified_image(suggestion=None):
+def get_unclassified_image(suggestion=None, max_tries=10000):
     """returns an image object that is unclassified"""
     # may not be the smartest way to do this, but will make it better later
     
     # start at a random picture
-    seed = randint(1,IMAGE_COUNT)
+    seed = randint(30000,IMAGE_COUNT)
+    tries = 0
     while seed:
         try:
             image = Image.get(Image.id==seed)
             obs = Observation.select().where(Observation.image==image)
-            if len(obs) == 0:
+            if len(obs) == 0 or tries > max_tries:
                 # no observations, so we can return it
                 return image
+            tries += 1
         except:
             pass
         seed += 1
         if seed > IMAGE_COUNT:
-            # wrap around
-            seed = 1
+            # reseed
+            seed = randint(30000,IMAGE_COUNT)
         
 def species_dict(species=None):
     """produce a nice master dictionary representation of all the species"""
