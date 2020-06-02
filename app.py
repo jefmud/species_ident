@@ -407,7 +407,8 @@ def observe_delete(item_id):
         
 if __name__ == '__main__':
     args = sys.argv
-    args.append('--runserver')
+    # override args if needed below
+    # args.append('--runserver')
     if '--createsuperuser' in args:
         models.create_superuser()
         app.logger.info('creating admin user initiated')
