@@ -19,7 +19,7 @@ from flask_login import UserMixin
 
 DATABASE = SqliteDatabase('app.db')
 
-IMAGE_COUNT = 58212
+IMAGE_COUNT = 112710
 
 # model definitions
 class BaseModel(Model):
@@ -85,6 +85,9 @@ class Species(BaseModel):
     def __repr__(self):
         return self.name
 
+    def __str__(self):
+        return self.name
+
 def initialize_database():
     """drop tables and init images with caution, this takes a LONG time"""
     DATABASE.connect()
@@ -134,7 +137,7 @@ def species_init():
     with open(fname,"r") as fp:
         data = json.loads(fp.read())
     for item in data:
-        print item
+        print(item)
         fields = item.get('fields')
         try:
             s = Species.get(Species.name==fields.get('name'))
@@ -142,7 +145,7 @@ def species_init():
             s = Species.create(name=fields.get('name'), ref_url=fields.get('ref_url'),
                                data=json.dumps(fields))
             s.save()
-            print "saving {}".format(s.name)
+            print("saving {}".format(s.name))
 
 class Image(BaseModel):
     """Image model references a remote image base_url joined to filepath"""
@@ -211,7 +214,7 @@ def image_init(fname, base_url="http://media.itg.wfu.edu/sites/"):
                 del(image)
                 count += 1
                 if count % 1000 == 0:
-                    print count
+                    print(count)
                 
     
     

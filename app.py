@@ -78,13 +78,18 @@ def index():
     """main landing page"""
     # todo, at some point, needs to become multi-project friendly
     user_stats = models.get_user_stats()
-    data = {'observations': 0, 'snapshots': models.IMAGE_COUNT, 'percent': 0, 'leader':"", 'leader_count': 0}
-    for user in user_stats:
-        if user_stats[1] > data['leader_count']:
-            data['leader_count'] = user[1]
-            data['leader'] = user[0]
-            
-        data['observations'] += user[1]
+    data = {
+        'observations': 0,
+        'snapshots': models.IMAGE_COUNT,
+        'percent': 0, 'leader':"", 'leader_count': 0
+    }
+    for username, user_observations in user_stats:
+        # update leaderboard in data dict
+        if user_observations > data['leader_count']:
+            data['leader_count'] = user_observations
+            data['leader'] = username
+        # accumulate total observations    
+        data['observations'] += user_observations
         
     # I removed the snapshot query to save time, administrator needs to update when more images
     # are added to the database (celery task?)
@@ -115,8 +120,8 @@ def login():
             user = models.User.get(models.User.username==username)
             if user.authenticate(password):
                 login_user(user)
-                flash('Welcome {}!'.format(user), category='success')
-                app.logger.info('user login by {} @ {}'.format(user, dt.now()))
+                flash('Welcome {}!'.format(user.username), category='success')
+                app.logger.info('user login by {} @ {}'.format(user.username, dt.now()))
                 return redirect(url_for('profile'))
         except Exception as e:
             print(e)
@@ -168,8 +173,12 @@ def register():
     return render_template('login/register.html', form=form)
 
 @app.route('/profile')
-@login_required
 def profile():
+    return redirect('/')
+
+@app.route('/profile')
+@login_required
+def profile_original():
     """profile shows summary data for current user"""
     # get all talk
     talk = models.Talk.select().where(
@@ -260,7 +269,7 @@ def selection():
     if request.method == 'POST':
         s = request.form['species']
         count = request.form['count']
-        print s,count
+        # print(s,count)
     return render_template('selection.html', species=species) 
     
 @app.route('/_observe/save/<int:image_id>/<int:count>/<species>/<int:next_id>')
@@ -397,28 +406,41 @@ def observe_delete(item_id):
     abort(403) # the user is not allowed to delete this observation
         
 if __name__ == '__main__':
-    if '--createsuperuser' in sys.argv:
+    args = sys.argv
+    args.append('--runserver')
+    if '--createsuperuser' in args:
         models.create_superuser()
         app.logger.info('creating admin user initiated')
         print("** superuser created **")
-    elif '--updateimages' in sys.argv:
-        models.update_images(sys.argv)
+    elif '--updateimages' in args:
+        models.update_images(args)
         print("** image update complete **")
         sys.exit(0)
-    elif '--initdatabase' in sys.argv:
+    elif '--initdatabase' in args:
         app.logger.info('database initialize begin')
         models.initialize_database()
         app.logger.info('database initialize completed')
         print("** database initialized **")
-    elif '--runserver' in sys.argv:
+    elif '--host' in args:
+        PORT = args[args.index('--host') + 1]
+    elif '--port' in args:
+        PORT = int(args[args.index('--port') + 1])
+    elif '--runserver' in args:
         # see settings at the top of the file
         app.logger.info('app started host={}, port={}'.format(HOST,PORT))
         app.run(host=HOST, port=PORT, debug=DEBUG)
+    elif '--paste' in args:
+        from paste import httpserver
+        app.logger.info('app started host={}, port={}'.format(HOST,PORT))
+        httpserver.serve(app, host=HOST, port=PORT)
     else:
         msg = """
         app.py valid command line options
+        --host (default = '0.0.0.0', defines visibility '0.0.0.0' is completely open)
+        --port (default = 5000, defines which port server will run on)
         --createsuperuser (allows creation of an administrative user)
         --initdatabase (initializes the database if required)
         --runserver (runs the server on port configured in source code)
+        --paste (runs a paste wsgi server on port configured in source code)
         """
         print(msg)
